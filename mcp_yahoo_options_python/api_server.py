@@ -17,7 +17,7 @@ app = FastAPI(title="Options News API")
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://options-news-platform.vercel.app/",
+    "https://options-news-platform.vercel.app",
 ]
 
 app.add_middleware(
