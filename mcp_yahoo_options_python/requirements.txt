@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+yfinance
+pandas
+httpx
+beautifulsoup4
+mcp
+

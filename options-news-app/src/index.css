@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/* Basic dark theme */
+@layer base {
+  body {
+    background-color: rgb(3, 7, 18);
+    color: rgb(226, 232, 240);
+  }
+}
