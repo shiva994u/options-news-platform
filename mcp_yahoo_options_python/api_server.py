@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import List, Literal, Optional
 
 from fastapi import FastAPI
+from routes import news_analysis
 from pydantic import BaseModel
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,7 +12,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from tools.options_tools import build_option_chain_snapshot, list_option_expirations
 from tools.news_tools import _scrape_yahoo_quote_section
 from tools.multistocks_tools import get_multi_symbol_snapshot  # if you expose helper separately
+from dotenv import load_dotenv
 
+load_dotenv()
 app = FastAPI(title="Options News API")
 
 origins = [
@@ -27,6 +30,8 @@ app.add_middleware(
     allow_methods=["*"],          # allow POST, GET, OPTIONS, etc.
     allow_headers=["*"],          # allow Content-Type, Authorization, etc.
 )
+
+app.include_router(news_analysis.router)
 
 
 # ---- Pydantic models for request bodies ----

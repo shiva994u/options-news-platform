@@ -1,7 +1,8 @@
 import React from "react";
 import type { SymbolSnapshot } from "../types";
-import { OptionSummaryCard } from "./OptionSummaryCard";
-import { NewsList } from "./NewsList";
+import { SymbolTabs } from "./SymbolTabs";
+import { SetupSummaryBar } from "./SetupSummaryBar";
+
 
 interface SymbolDetailPanelProps {
   snapshot: SymbolSnapshot | null;
@@ -29,13 +30,12 @@ export const SymbolDetailPanel: React.FC<SymbolDetailPanelProps> = ({
           )}
         </div>
       </div>
+      
+      {/* 🔑 New AI-driven summary */}
+      <SetupSummaryBar rating={snapshot.aiRating} />
 
-      <div className="flex-1 overflow-auto space-y-3">
-        <OptionSummaryCard ticker={snapshot.ticker} options={snapshot.options} />
-
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-3">
-          <NewsList title="Press releases" items={snapshot.pressReleases} />
-        </div>
+      <div className="mt-3 flex-1 min-h-0">
+        <SymbolTabs snapshot={snapshot} />
       </div>
     </div>
   );

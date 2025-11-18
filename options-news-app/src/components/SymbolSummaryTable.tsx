@@ -1,10 +1,25 @@
 import React from "react";
-import type { SymbolSnapshot, OptionContract } from "../types";
+import type { SymbolSnapshot, OptionContract, Rating } from "../types";
 
 interface SymbolSummaryTableProps {
   snapshots: SymbolSnapshot[];
   selectedTicker?: string;
   onSelect: (snapshot: SymbolSnapshot | null) => void;
+}
+
+function ratingClass(label?: string): string {
+  switch (label) {
+    case "Strong Buy":
+      return "bg-emerald-900/70 text-emerald-200 border border-emerald-700";
+    case "Buy":
+      return "bg-emerald-800/60 text-emerald-200 border border-emerald-600";
+    case "Sell":
+      return "bg-rose-900/70 text-rose-200 border border-rose-700";
+    case "Strong Sell":
+      return "bg-rose-950/80 text-rose-200 border border-rose-700";
+    default:
+      return "bg-slate-800 text-slate-200 border border-slate-700";
+  }
 }
 
 function computeTotals(contracts: OptionContract[] | undefined) {
@@ -52,6 +67,7 @@ export const SymbolSummaryTable: React.FC<SymbolSummaryTableProps> = ({
           <thead className="bg-slate-950/70 sticky top-0 z-10">
             <tr>
               <th className="text-left px-3 py-2 font-medium">Ticker</th>
+              <th className="text-center px-3 py-2 font-medium">Rating</th>
               <th className="text-right px-3 py-2 font-medium">Price</th>
               <th className="text-right px-3 py-2 font-medium">Total Calls</th>
               <th className="text-right px-3 py-2 font-medium">Total Puts</th>
@@ -95,6 +111,18 @@ export const SymbolSummaryTable: React.FC<SymbolSummaryTableProps> = ({
                 >
                   <td className="px-3 py-2 text-left font-semibold">
                     {snap.ticker}
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    {snap.rating && (
+                      <span
+                        className={
+                          "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium " +
+                          ratingClass(snap.rating.label)
+                        }
+                      >
+                        {snap.rating.label}
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-right">
                     {opt?.underlying_price != null

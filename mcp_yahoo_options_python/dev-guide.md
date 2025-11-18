@@ -11,6 +11,8 @@ python -m pip install --upgrade pip
 # install packages
 pip install mcp yfinance pandas
 pip install mcp[cli]
+python -m pip install openai
+python -m pip install python-dotenv
 
 # run mcp server
 mcp dev server.py

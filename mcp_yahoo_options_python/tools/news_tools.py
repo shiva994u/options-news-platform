@@ -80,7 +80,7 @@ def _scrape_yahoo_quote_section(
         return items
 
     # 3) Each <li> is a story: class contains both 'stream-item' and 'story-item'
-    li_nodes = ul.find_all("li", class_="stream-item", limit=count * 2)  # read a few extra
+    li_nodes = ul.select("li.stream-item.story-item")  # read a few extra
 
     for li in li_nodes:
         li_classes = li.get("class", []) # type: ignore
@@ -155,6 +155,6 @@ def register_news_tools(mcp: FastMCP) -> None:
         Scrape latest Yahoo Finance *press releases* for a ticker.
 
         Source:
-          https://finance.yahoo.com/quote/<TICKER>/press-releases/
+          https://finance.yahoo.com/quote/<TICKER>/news/
         """
-        return _scrape_yahoo_quote_section(ticker, "latest-news", count)
+        return _scrape_yahoo_quote_section(ticker, "news", count)

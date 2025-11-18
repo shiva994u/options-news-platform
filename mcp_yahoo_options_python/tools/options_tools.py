@@ -10,55 +10,67 @@ from mcp.server.fastmcp import FastMCP
 
 # ---------- PURE HELPERS (no MCP stuff) ----------
 
-def _fast_info_get(t: yf.Ticker, key: str):
-    """Safely pull a field from fast_info."""
-    try:
-        if hasattr(t, "fast_info") and t.fast_info is not None:
-            return t.fast_info.get(key, None)
-    except Exception:
-        return None
-    return None
-
 def build_option_chain_snapshot(
     ticker: str,
     expiration: str | None = None,
     side: Literal["calls", "puts", "both"] = "both",
     limit: int = 20,
 ) -> dict:
-    """
-    Core logic to fetch and format an options chain snapshot for one symbol.
-    This is safe to call from anywhere (single tool, multi-symbol tool, etc.).
-    """
     symbol = ticker.upper()
     t = yf.Ticker(symbol)
 
     expirations = list(t.options)
 
-    # Case 4 – No expirations at all
+    # No expirations at all → return empty options but still include stock info
     if not expirations:
+        raw_underlying = _fast_info_get(t, "lastPrice")
+        raw_prev_close = _fast_info_get(t, "previousClose")
+        raw_open = _fast_info_get(t, "open")
+        raw_volume = _fast_info_get(t, "lastVolume")
+        raw_avg10 = _fast_info_get(t, "tenDayAverageVolume")
+        raw_avg3m = _fast_info_get(t, "threeMonthAverageVolume")
+
+        underlying_price = _clean_number(raw_underlying)
+        prev_close = _clean_number(raw_prev_close)
+        open_price = _clean_number(raw_open)
+        current_volume = _clean_number(raw_volume)
+        avg_volume_10d = _clean_number(raw_avg10)
+        avg_volume_3m = _clean_number(raw_avg3m)
+
+        earnings_date_iso = None
+        try:
+            edf = t.get_earnings_dates(limit=1)
+            if edf is not None and not edf.empty:
+                idx0 = edf.index[0]
+                try:
+                    earnings_date_iso = idx0.isoformat()
+                except Exception:
+                    earnings_date_iso = str(idx0)
+        except Exception:
+            earnings_date_iso = None
+
         return {
             "ticker": symbol,
             "expiration": None,
-            "underlying_price": t.fast_info.get("lastPrice", None)
-            if hasattr(t, "fast_info")
-            else None,
+            "underlying_price": underlying_price,
+            "prev_close": prev_close,
+            "open_price": open_price,
+            "volume": current_volume,
+            "avg_volume_10d": avg_volume_10d,
+            "avg_volume_3m": avg_volume_3m,
+            "earnings_date": earnings_date_iso,
             "calls": [],
             "puts": [],
-            "note": "No option expirations available; returned empty chain."
+            "note": "No option expirations available; returned stock snapshot only.",
         }
 
-    # Normalize expiration choice
-    if expiration is None:
-        # Case 3 – no expiration provided → use first available
+    # Choose expiration (existing logic, with fallback to first)
+    if expiration is None or expiration not in expirations:
         chosen_exp = expirations[0]
     else:
-        # Case 2 – expiration not valid → use first available
-        if expiration not in expirations:
-            chosen_exp = expirations[0]
-        else:
-            chosen_exp = expiration
+        chosen_exp = expiration
 
-    chain = t.option_chain(chosen_exp)  # returns .calls and .puts DataFrames
+    chain = t.option_chain(chosen_exp)
     calls_df = chain.calls
     puts_df = chain.puts
 
@@ -79,52 +91,43 @@ def build_option_chain_snapshot(
         cols = [c for c in wanted if c in df.columns]
         if not cols:
             return []
-
-        # sort by volume and take the top N rows
         trimmed = df[cols].sort_values("volume", ascending=False).head(limit)
-
         records = trimmed.to_dict(orient="records")
 
         cleaned: list[dict] = []
         for rec in records:
-            # sanitize numeric fields
             for key, val in rec.items():
                 rec[key] = _clean_number(val)
-
-            # drop broken rows where strike is missing or <= 0
             strike = rec.get("strike")
             if strike is None or strike <= 0:
                 continue
-
             cleaned.append(rec)
-
         return cleaned
 
-    # ---- Underlying price ----
+    # ---- Stock-level info ----
     raw_underlying = _fast_info_get(t, "lastPrice")
-    underlying_price = _clean_number(raw_underlying)
-    
-    # ---- Volume & average volumes ----
-    raw_volume = _fast_info_get(t, "lastVolume")  # current day volume (so far)
-    raw_avg10 = _fast_info_get(t, "tenDayAverageVolume")  # 10-day avg
-    raw_avg3m = _fast_info_get(t, "threeMonthAverageVolume")  # 3-month avg
+    raw_prev_close = _fast_info_get(t, "previousClose")
+    raw_open = _fast_info_get(t, "open")
+    raw_volume = _fast_info_get(t, "lastVolume")
+    raw_avg10 = _fast_info_get(t, "tenDayAverageVolume")
+    raw_avg3m = _fast_info_get(t, "threeMonthAverageVolume")
 
+    underlying_price = _clean_number(raw_underlying)
+    prev_close = _clean_number(raw_prev_close)
+    open_price = _clean_number(raw_open)
     current_volume = _clean_number(raw_volume)
     avg_volume_10d = _clean_number(raw_avg10)
     avg_volume_3m = _clean_number(raw_avg3m)
-    
-    # ---- Earnings date (next upcoming, if available) ----
+
     earnings_date_iso = None
     try:
-        # yfinance get_earnings_dates(limit=1) gives a DataFrame indexed by date
         edf = t.get_earnings_dates(limit=1)
         if edf is not None and not edf.empty:
-            # index[0] is a Timestamp
-            next_ed = edf.index[0]
+            idx0 = edf.index[0]
             try:
-                earnings_date_iso = next_ed.isoformat()
+                earnings_date_iso = idx0.isoformat()
             except Exception:
-                earnings_date_iso = str(next_ed)
+                earnings_date_iso = str(idx0)
     except Exception:
         earnings_date_iso = None
 
@@ -132,6 +135,8 @@ def build_option_chain_snapshot(
         "ticker": symbol,
         "expiration": chosen_exp,
         "underlying_price": underlying_price,
+        "prev_close": prev_close,
+        "open_price": open_price,
         "volume": current_volume,
         "avg_volume_10d": avg_volume_10d,
         "avg_volume_3m": avg_volume_3m,
@@ -151,11 +156,9 @@ def _clean_number(value):
     Convert NaN/inf to None so JSON encoding doesn't crash.
     Leave booleans and non-numeric types unchanged.
     """
-    # Don't touch booleans
     if isinstance(value, bool):
         return value
 
-    # Handle numeric (int, float, numpy scalars, etc.)
     if isinstance(value, numbers.Real):
         try:
             f = float(value)
@@ -163,10 +166,19 @@ def _clean_number(value):
             return None
         if math.isfinite(f):
             return f
-        return None  # NaN or +/-inf → None
+        return None
 
-    # Anything else (str, None, etc.) pass through
     return value
+
+
+def _fast_info_get(t: yf.Ticker, key: str):
+    """Safely pull a field from fast_info."""
+    try:
+        if hasattr(t, "fast_info") and t.fast_info is not None:
+            return t.fast_info.get(key, None)
+    except Exception:
+        return None
+    return None
 
 
 def list_option_expirations(ticker: str) -> list[str]:

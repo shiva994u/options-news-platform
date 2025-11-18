@@ -1,3 +1,38 @@
+export type ImpactDirection = "Bullish" | "Bearish" | "Neutral";
+
+export interface ArticleImpactRow {
+  factor: string;
+  impact: ImpactDirection;
+  reason: string;
+}
+export type FactorImpact = "Bullish" | "Bearish" | "Neutral";
+export interface AIRatingFactor {
+  name: string;
+  impact: FactorImpact;
+  score: number; // -2..+2
+  reason: string;
+}
+
+export type AIRatingLabel = "Strong Buy" | "Buy" | "Neutral" | "Sell" | "Avoid";
+
+export interface AIRating {
+  label: AIRatingLabel;
+  numeric: number;
+  timeframe: string;
+  summary: string;
+  factors: AIRatingFactor[];
+  source?: string;
+}
+
+export interface ArticleAnalysis {
+  url: string;
+  ticker?: string;
+  overall: ImpactDirection;
+  score: number;
+  rows: ArticleImpactRow[];
+  summary?: string | null;
+}
+
 export interface OptionContract {
   contractSymbol: string;
   strike: number;
@@ -36,12 +71,30 @@ export interface NewsItem {
   link: string;
 }
 
+export interface Rating {
+  label: string;
+  total_score: number;
+  volume_score: number;
+  price_score: number;
+  options_score: number;
+  news_score: number;
+  volume_ratio?: number | null;
+  put_call_vol_ratio?: number | null;
+  put_call_oi_ratio?: number | null;
+  options_to_stock_vol_ratio?: number | null;
+  gap_percent?: number | null;
+  intraday_change_percent?: number | null;
+  raw_news_score?: number;
+}
+
 export interface SymbolSnapshot {
   ticker: string;
   options: OptionsSnapshot | null;
   news: NewsItem[];
   pressReleases: NewsItem[];
   error: string | null;
+  rating?: Rating; // 👈 add this
+  aiRating?: AIRating;
 }
 
 export interface MultiSnapshotRequest {
