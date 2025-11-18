@@ -8,15 +8,15 @@ export interface ArticleImpactRow {
 export type FactorImpact = "Bullish" | "Bearish" | "Neutral";
 export interface AIRatingFactor {
   name: string;
-  impact: FactorImpact;
-  score: number; // -2..+2
+  impact: "Bullish" | "Bearish" | "Neutral";
+  score: number;
   reason: string;
 }
 
 export type AIRatingLabel = "Strong Buy" | "Buy" | "Neutral" | "Sell" | "Avoid";
 
 export interface AIRating {
-  label: AIRatingLabel;
+  label: "Strong Buy" | "Buy" | "Neutral" | "Sell" | "Avoid";
   numeric: number;
   timeframe: string;
   summary: string;

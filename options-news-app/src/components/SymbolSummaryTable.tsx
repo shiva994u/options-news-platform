@@ -1,5 +1,5 @@
 import React from "react";
-import type { SymbolSnapshot, OptionContract, Rating } from "../types";
+import type { SymbolSnapshot, OptionContract } from "../types";
 
 interface SymbolSummaryTableProps {
   snapshots: SymbolSnapshot[];

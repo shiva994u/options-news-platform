@@ -85,19 +85,11 @@ def get_multi_symbol_snapshot(
         snapshot["rating"] = _compute_rating_for_symbol(snapshot)
         
         try:
-            ai_rating = get_ai_overall_rating(snapshot)
+            snapshot["aiRating"] = None #get_ai_overall_rating(snapshot)
         except Exception as e:
-            # don’t break everything if AI fails
-            ai_rating = {
-                "label": "Neutral",
-                "numeric": 0.0,
-                "timeframe": "1–3 days",
-                "summary": "AI rating unavailable.",
-                "factors": [],
-                "source": f"error: {e}",
-            }
-
-        snapshot["aiRating"] = ai_rating
+            print(f"[snapshot] Failed to compute aiRating for {snapshot.get('ticker')}: {e}")
+            snapshot["aiRating"] = None
+            
         results.append(snapshot)
     return results
 
